@@ -183,7 +183,9 @@ const coreFields = computed(() => {
   }
   const _coreFields = [
     { group: true, fields: [getField("ticket_type"), getField("priority")] },
-    { group: false, fields: [getField("customer")] },
+    // HLB-FORK: no-customer — HLB CBS is internal-only (no external customers),
+    // so the Customer core field is intentionally removed from the agent ticket
+    // sidebar. See customisations.manifest.json id=ui-agent-remove-customer.
     { group: true, fields: [getField("agent_group")] },
   ];
 
