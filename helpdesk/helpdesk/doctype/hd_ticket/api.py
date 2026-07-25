@@ -559,14 +559,12 @@ def duplicate_ticket(ticket_doc, subject):
 @frappe.whitelist()
 @agent_only
 def get_ticket_customizations():
-    # get form script
-    # get default ticket template
-    custom_fields = frappe.get_all(
-        "HD Ticket Template Field",
-        filters={"parent": "Default"},
-        fields=["fieldname", "required", "placeholder", "url_method"],
-        order_by="idx",
-    )
+    # HLB-FORK: sidebar-fields — return the template's FULL field meta (this
+    # includes depends_on/mandatory_depends_on, joined from the Custom Field),
+    # so the agent sidebar can hide fields that don't apply to the ticket's type.
+    # Upstream returned only fieldname/required/placeholder/url_method, so every
+    # type's fields dumped into the sidebar at once.
+    custom_fields = get_fields_meta("Default")
     form_scripts = get_form_script("HD Ticket")
     return {"custom_fields": custom_fields, "_form_script": form_scripts}
 

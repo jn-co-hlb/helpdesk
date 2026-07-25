@@ -220,6 +220,20 @@ const customFields = computed(() => {
     "status",
   ];
   customFields = customFields.filter((f) => !_coreFields.includes(f.fieldname));
+  // HLB-FORK: sidebar-fields — the Default template lists every ticket type's
+  // fields; only show the ones that apply to THIS ticket's type (matched via the
+  // field's depends_on now returned by get_ticket_customizations), plus any field
+  // that already has a value. Without this the sidebar dumps all ~40 fields.
+  const _currentType = ticket.value.doc.ticket_type || "";
+  customFields = customFields.filter((f) => {
+    const dep = f.depends_on || "";
+    if (!dep) return true;
+    const matchesType =
+      dep.includes(`'${_currentType}'`) || dep.includes(`"${_currentType}"`);
+    const val = ticket.value.doc[f.fieldname];
+    const hasValue = val !== null && val !== undefined && val !== "";
+    return matchesType || hasValue;
+  });
   let _customFields = customFields
     .map((f) => {
       let fieldMeta = getField(f.fieldname);
