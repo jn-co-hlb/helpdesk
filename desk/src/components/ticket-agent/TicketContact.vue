@@ -1,5 +1,6 @@
 <template>
-  <div class="mt-4 flex items-center justify-start gap-2.5">
+  <div class="mt-4 flex flex-col gap-2.5">
+   <div class="flex items-center justify-start gap-2.5">
     <Avatar :label="contact.data?.name" :image="contactImage" size="2xl" />
     <div class="flex flex-col gap-1.5">
       <Tooltip :text="contact.data?.name || contact.data?.email_id">
@@ -36,6 +37,20 @@
       :name="contact.data?.name ?? ''"
       @onUpdate="contact.reload"
     />
+   </div>
+
+   <!-- HLB-FORK: editable-submitter — agents can reassign who submitted the
+        ticket. Lists Contacts (the people/users known to the helpdesk). -->
+   <div class="flex items-center gap-2">
+     <span class="text-sm text-ink-gray-5 shrink-0 w-[74px]">Submitter</span>
+     <Link
+       class="flex-1"
+       :doctype="'Contact'"
+       :modelValue="ticket.doc?.contact"
+       :placeholder="'Select a person'"
+       @update:model-value="updateSubmitter"
+     />
+   </div>
   </div>
 </template>
 
@@ -45,6 +60,7 @@ import { useTelephonyStore } from "@/stores/telephony";
 import { useUserStore } from "@/stores/user";
 import { TicketContactSymbol, TicketSymbol } from "@/types";
 import { openContact } from "@/utils";
+import { Link } from "@/components";
 import { Avatar, Button, Tooltip } from "frappe-ui";
 import { storeToRefs } from "pinia";
 import { computed, inject, ref } from "vue";
@@ -68,6 +84,15 @@ const contactImage = computed(() => {
     contact.value?.data?.image || (email && getUser(email)?.user_image) || ""
   );
 });
+
+// HLB-FORK: editable-submitter — reassign the ticket's submitter (contact).
+const updateSubmitter = (val: string) => {
+  if (!val || val === ticket.value.doc?.contact) return;
+  ticket.value.setValue.submit(
+    { contact: val },
+    { onSuccess: () => contact.value.reload() }
+  );
+};
 
 const callContact = () => {
   if (!contact.value.data.mobile_no && !contact.value.data.phone) {
