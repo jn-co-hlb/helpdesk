@@ -60,8 +60,12 @@
               />
             </div>
           </template>
+          <!-- HLB-FORK: agent-layout — as the main pane this is much wider than
+               the stock 352px sidebar, so the per-type intake fields lay out in
+               two columns from `md` up instead of one tall single-column list.
+               Below `md` (and in a narrowed pane) it stays single-column. -->
           <div
-            class="space-y-1.5 px-4 mb-2 mt-0.5"
+            class="px-4 mb-2 mt-0.5 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5"
             v-if="Boolean(customFields.length)"
           >
             <template v-for="field in customFields">
@@ -249,10 +253,19 @@ const customFields = computed(() => {
   return _customFields;
 });
 
+// HLB-FORK: agent-layout — this pane is now the MAIN content (see
+// TicketAgent.vue), so the ticket's own information should be visible on open
+// rather than collapsed behind a chevron. "Ticket Info" holds the per-type
+// intake fields, which is the detail agents actually work from.
+// The storage key is deliberately renamed from upstream's "openedSections":
+// useStorage(..., { mergeDefaults: true }) keeps a user's EXISTING stored value
+// for a known key, so agents who had already collapsed these would never see
+// the new defaults. A fresh key gives everyone the new behaviour once, while
+// still remembering their choice from then on.
 const openedSections = useStorage(
-  "openedSections",
+  "hlbOpenedSections",
   {
-    ticketInfo: false,
+    ticketInfo: true,
     recentTickets: false,
     similarTickets: false,
   },

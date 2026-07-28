@@ -1,14 +1,30 @@
 <template>
   <div v-if="ticket.doc?.name" class="flex-1">
     <TicketHeader :viewers="viewers" />
+    <!-- HLB-FORK: agent-layout — the panes are swapped relative to upstream.
+         HLB agents work from the structured ticket data (type, sub-type,
+         priority and the per-type intake fields), so TicketDetailsTab is the
+         MAIN content and the activity/email/comment feed moves to a resizable
+         right-hand sidebar. Upstream had TicketActivityPanel as flex-1 with
+         TicketSidebar (= Resizer + TicketDetailsTab) pinned right.
+         See customisations.manifest.json id=ui-agent-layout. -->
     <div class="h-full flex overflow-hidden">
-      <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Tabs & Communication Area -->
-        <TicketActivityPanel />
+      <!-- Ticket details: main content -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <TicketDetailsTab />
       </div>
 
-      <!-- Sidepanel with Resizer -->
-      <TicketSidebar />
+      <!-- Updates: right sidebar. Wider default/max than the stock 352/480,
+           because the email + comment composers live in here now. -->
+      <Resizer
+        class="flex flex-col border-l h-full shrink-0"
+        side="right"
+        :default-width="520"
+        :min-width="360"
+        :max-width="900"
+      >
+        <TicketActivityPanel />
+      </Resizer>
     </div>
     <SetContactPhoneModal
       v-if="ticket.doc.contact"
@@ -49,9 +65,12 @@
 
 <script setup lang="ts">
 import TicketIcon from "@/components/icons/TicketIcon.vue";
+import Resizer from "@/components/Resizer.vue";
 import TicketActivityPanel from "@/components/ticket-agent/TicketActivityPanel.vue";
+import TicketDetailsTab from "@/components/ticket-agent/TicketDetailsTab.vue";
 import TicketHeader from "@/components/ticket-agent/TicketHeader.vue";
-import TicketSidebar from "@/components/ticket-agent/TicketSidebar.vue";
+// HLB-FORK: agent-layout — TicketSidebar (Resizer + TicketDetailsTab) is no
+// longer used here; the two panes are composed directly so they can swap sides.
 import SetContactPhoneModal from "@/components/ticket/SetContactPhoneModal.vue";
 import { useActiveViewers } from "@/composables/realtime";
 import {
