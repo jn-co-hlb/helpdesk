@@ -24,6 +24,17 @@
       />
       <slot name="label-extra" />
     </div>
+    <!-- HLB-FORK: field-notes — render a Custom Field's `description` as helper
+         text under the input. Upstream renders only the label and the control,
+         so there was no way to put per-field guidance on the intake form; the
+         only note mechanism was HD Ticket Template.about, which is per-template
+         and therefore shows for every ticket type. Because our custom fields are
+         already depends_on-gated by type, a description here gives us per-type
+         notes with no extra machinery.
+         See customisations.manifest.json id=ui-field-notes. -->
+    <p v-if="field.description" class="text-p-sm text-ink-gray-5">
+      {{ __(field.description) }}
+    </p>
   </div>
 </template>
 

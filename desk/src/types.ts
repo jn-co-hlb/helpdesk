@@ -251,7 +251,11 @@ export interface Field {
   label: string;
   options: string;
   required: 0 | 1;
-  description?: null;
+  // HLB-FORK: field-notes — was `description?: null`, which could only ever hold
+  // null and made the field useless to read. The API does return the Custom
+  // Field's description text (hd_ticket_template/api.py selects it), and
+  // UniInput now renders it as per-field helper text.
+  description?: string | null;
   url_method?: string;
   link_filters?: string;
   filters?: string;
