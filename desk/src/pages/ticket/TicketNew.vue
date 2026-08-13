@@ -59,14 +59,17 @@
         :class="(subject.length >= 2 || description.length) && 'gap-5'"
       >
         <div class="flex flex-col gap-2">
+          <!-- HLB-FORK: subject-per-type — the label and placeholder come from
+               subjectCopy instead of being hardcoded, so a ticket type can
+               repurpose Subject. See the comment on SUBJECT_OVERRIDES below. -->
           <span class="block text-sm text-ink-gray-7">
-            {{ __("Subject") }}
+            {{ subjectCopy.label }}
             <span class="place-self-center text-ink-red-5"> * </span>
           </span>
           <FormControl
             v-model="subject"
             type="text"
-            :placeholder="__('A short description')"
+            :placeholder="subjectCopy.placeholder"
             maxlength="140"
           />
         </div>
@@ -183,6 +186,37 @@ const subject = ref("");
 const description = ref("");
 const attachments = ref([]);
 const templateFields = reactive({});
+
+// HLB-FORK: subject-per-type — let a ticket type rename Subject.
+//
+// WHY: there is exactly ONE new-ticket form for every ticket type (template
+// "Default", with per-type fields shown via depends_on), and Subject's label and
+// placeholder were hardcoded here. Software Requests needed Subject to BE the
+// software name — so the request is readable in the ticket list — without a
+// second "Software / tool name" field duplicating it, and without renaming
+// Subject for Operational Incidents, HR Onboarding and the rest.
+//
+// Keyed on the HD Ticket Type name, so adding a type here is a one-line change.
+// Anything not listed keeps the upstream wording untouched.
+//
+// Strings are stored raw and passed through __() at read time, not at module
+// load, so translations resolve after the locale is ready.
+const SUBJECT_OVERRIDES: Record<string, { label: string; placeholder: string }> =
+  {
+    "Software Request": {
+      label: "Software tool name",
+      placeholder: "Full software name and version if applicable.",
+    },
+  };
+
+const subjectCopy = computed(() => {
+  const ticketType = (templateFields as Record<string, string>)["ticket_type"];
+  const override = SUBJECT_OVERRIDES[ticketType];
+  return {
+    label: __(override?.label ?? "Subject"),
+    placeholder: __(override?.placeholder ?? "A short description"),
+  };
+});
 
 const template = createResource({
   url: "helpdesk.helpdesk.doctype.hd_ticket_template.api.get_one",
