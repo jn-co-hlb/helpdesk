@@ -1,65 +1,41 @@
-name: Build Container Image
+# DISABLED IN THE HLB FORK — do not re-enable without reading this.
+#
+# Upstream's version of this file triggers on `push: tags: ["*"]` and publishes to
+# `ghcr.io/${{ github.repository }}`. In this fork that expands to
+# `ghcr.io/jn-co-hlb/helpdesk` — the SAME GHCR package the deploy repo
+# (jn-co-hlb/HLB-CBS-Helpdesk-Deploy) builds our production image into.
+#
+# Our fork release process pushes a tag on every fork change
+# (`hlb-v<upstream>-<n>`, see DEPENDENCIES.md), so upstream's workflow fired on
+# exactly the action we perform most, and published:
+#
+#     ghcr.io/jn-co-hlb/helpdesk:hlb-v1.28.1-2   <- github.ref_name
+#     ghcr.io/jn-co-hlb/helpdesk:stable
+#
+# built from `FRAPPE_BRANCH=version-15` and UPSTREAM `frappe/helpdesk@main`, with
+# neither `company_helpdesk` nor `wiki` in it. It never overwrote `:latest` or
+# `:<40-char-sha>`, so the NAS was not pulling it — but it left a decoy image at
+# precisely the tag name our own docs call "the pin", so setting
+# IMAGE_TAG=hlb-v1.28.1-2 would have run a Frappe v15 site with none of our apps.
+#
+# Neutered rather than deleted so the reason survives the next rebase onto a new
+# upstream tag. The durable fix is repo Settings -> Actions -> General ->
+# "Disable actions" on this fork; this file is defence in depth.
+#
+# Our images are built ONLY by jn-co-hlb/HLB-CBS-Helpdesk-Deploy
+# (.github/workflows/build-and-deploy.yml), which pins frappe, the fork tag,
+# wiki and company_helpdesk via apps.json.
+
+name: Build Container Image (disabled in fork)
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    tags:
-      - "*"
 
 jobs:
-  build:
-    name: Build
-
+  disabled:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        arch: [amd64, arm64]
-
     steps:
-      - name: Checkout Entire Repository
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          platforms: linux/${{ matrix.arch }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set Branch
+      - name: Explain
         run: |
-          export APPS_JSON='[{"url": "https://github.com/frappe/telephony","branch": "develop"},{"url": "https://github.com/frappe/helpdesk","branch": "main"}]'
-          echo "APPS_JSON_BASE64=$(echo $APPS_JSON | base64 -w 0)" >> $GITHUB_ENV
-          echo "FRAPPE_BRANCH=version-15" >> $GITHUB_ENV
-
-      - name: Set Image Tag
-        run: |
-          echo "IMAGE_TAG=stable" >> $GITHUB_ENV
-
-      - uses: actions/checkout@v4
-        with:
-          repository: frappe/frappe_docker
-          path: builds
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          context: builds
-          file: builds/images/layered/Containerfile
-          tags: >
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }},
-            ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
-          build-args: |
-            "FRAPPE_BRANCH=${{ env.FRAPPE_BRANCH }}"
-            "APPS_JSON_BASE64=${{ env.APPS_JSON_BASE64 }}"
+          echo "Disabled in the HLB fork — see the comment at the top of this file."
+          echo "Production images are built by jn-co-hlb/HLB-CBS-Helpdesk-Deploy."
