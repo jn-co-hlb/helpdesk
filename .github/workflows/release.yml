@@ -1,40 +1,21 @@
-# This action:
+# DISABLED IN THE HLB FORK — see .github/workflows/build.yml for the full rationale.
 #
-# 1. Generates release notes using github API.
-# 2. Strips unnecessary info like chore/style etc from notes.
-# 3. Updates release info.
+# Upstream's version fires on `release: [released]` and PATCHes release notes on
+# `/repos/frappe/helpdesk/releases/...` — i.e. it reaches out and writes to the
+# UPSTREAM repository, not this one. It needs a `RELEASE_TOKEN` we do not hold, so
+# it would fail rather than succeed, but a workflow in our fork that tries to
+# mutate frappe/helpdesk has no business existing.
+#
+# Neutered rather than deleted so the reason survives the next rebase.
 
-name: 'Release Notes'
+name: Release Notes (disabled in fork)
 
 on:
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Tag of release like v1.0.0'
-        required: true
-        type: string
-  release:
-    types: [released]
-
-permissions:
-  contents: read
 
 jobs:
-  regen-notes:
-    name: 'Regenerate release notes'
+  disabled:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Update notes
-      run: |
-        NEW_NOTES=$(gh api --method POST -H "Accept: application/vnd.github+json"  /repos/frappe/helpdesk/releases/generate-notes  -f tag_name=$RELEASE_TAG \
-          | jq -r '.body' \
-          | sed -E '/^\* (chore|ci|test|docs|style)/d' \
-          | sed -E 's/by @mergify //'
-        )
-        RELEASE_ID=$(gh api -H "Accept: application/vnd.github+json" /repos/frappe/helpdesk/releases/tags/$RELEASE_TAG | jq -r '.id')
-        gh api --method PATCH -H "Accept: application/vnd.github+json" /repos/frappe/helpdesk/releases/$RELEASE_ID -f body="$NEW_NOTES"
-
-      env:
-        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        RELEASE_TAG: ${{ github.event.inputs.tag_name || github.event.release.tag_name }}
+      - name: Explain
+        run: echo "Disabled in the HLB fork — this wrote to frappe/helpdesk, not to us."

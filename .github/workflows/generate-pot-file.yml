@@ -1,35 +1,20 @@
-name: Regenerate POT file (translatable strings)
+# DISABLED IN THE HLB FORK — see .github/workflows/build.yml for the full rationale.
+#
+# Upstream runs this weekly on cron with `permissions: contents: write` and
+# commits a regenerated POT file to `develop`. We do not maintain translations in
+# this fork, and a scheduled job with write access running unattended against a
+# branch nobody watches is not something we want inherited.
+#
+# Neutered rather than deleted so the reason survives the next rebase.
+
+name: Regenerate POT file (disabled in fork)
+
 on:
-  schedule:
-    # 9:30 UTC => 4 PM IST Sunday
-    - cron: "30 10 * * 0"
   workflow_dispatch:
 
 jobs:
-  regenerate-pot-file:
-    name: Regenerate POT file
+  disabled:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        branch: ["develop"]
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ matrix.branch }}
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Run script to update POT file
-        run: |
-          bash ${GITHUB_WORKSPACE}/.github/helpers/update_pot_file.sh
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          BASE_BRANCH: ${{ matrix.branch }}
+      - name: Explain
+        run: echo "Disabled in the HLB fork — translations are not maintained here."

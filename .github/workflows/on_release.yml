@@ -1,32 +1,20 @@
-name: Generate Semantic Release
+# DISABLED IN THE HLB FORK — see .github/workflows/build.yml for the full rationale.
+#
+# Upstream runs semantic-release on every push to `main`. In this fork `main`
+# tracks upstream and our work lives on `hlb-fork/*`, so it is inert today — but
+# it would create releases and tags in OUR repository the moment anything landed
+# on `main`, and our fork tags (`hlb-v<upstream>-<n>`) are load-bearing pins.
+#
+# Neutered rather than deleted so the reason survives the next rebase.
+
+name: Generate Semantic Release (disabled in fork)
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
 jobs:
-  release:
-    name: Release
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Entire Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - name: Setup dependencies
-        run: |
-          npm install @semantic-release/git @semantic-release/exec --no-save
-      - name: Create Release
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          GIT_AUTHOR_NAME: "Frappe PR Bot"
-          GIT_AUTHOR_EMAIL: "developers@frappe.io"
-          GIT_COMMITTER_NAME: "Frappe PR Bot"
-          GIT_COMMITTER_EMAIL: "developers@frappe.io"
-        run: npx semantic-release
+      - name: Explain
+        run: echo "Disabled in the HLB fork — releases and tags here are cut by hand."
