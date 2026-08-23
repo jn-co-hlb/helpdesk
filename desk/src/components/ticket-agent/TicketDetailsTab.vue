@@ -185,10 +185,16 @@ const coreFields = computed(() => {
   }
   const _coreFields = [
     { group: true, fields: [getField("ticket_type"), getField("priority")] },
-    // HLB-FORK: no-customer — HLB CBS is internal-only (no external customers),
-    // so the Customer core field is intentionally removed from the agent ticket
-    // sidebar. See customisations.manifest.json id=ui-agent-remove-customer.
-    { group: true, fields: [getField("agent_group")] },
+    // HLB-FORK: department — the Customer field is BACK, and is now the
+    // Department the ticket belongs to. It was removed here on the reasoning
+    // that HLB CBS is internal-only and has no customers; that premise is
+    // superseded. We keep the record and rename the word (Translation rows in
+    // company_helpdesk/setup/terminology.py), because HD Customer already
+    // models exactly what a department needs: a named group, with members, that
+    // a ticket belongs to and whose own agents work it. Secretarial fielding a
+    // request from Audit never reaches IT, and this field is how an agent sees
+    // and changes that. See customisations.manifest.json id=ui-agent-department.
+    { group: true, fields: [getField("customer"), getField("agent_group")] },
   ];
 
   _coreFields.forEach((section) => {

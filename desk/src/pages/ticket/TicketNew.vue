@@ -53,6 +53,22 @@
           </template>
         </UniInput>
       </div>
+      <!-- HLB-FORK: type-notice — show the selected HD Ticket Type's own
+           `description` as a visible notice. Upstream has no per-type guidance
+           anywhere on the intake form: `HD Ticket Template.about` is per
+           TEMPLATE so it shows the same words for every type, and the
+           field-notes mechanism renders a FIELD's description, which is static.
+           Picking the wrong ticket type is our most common intake mistake and
+           it mis-routes the ticket, so the guidance has to react to the choice.
+           Deliberately a notice and not a Tooltip like the priority one beside
+           it: somebody choosing the wrong type does not know they have anything
+           to hover over. See customisations.manifest.json id=ui-type-notice. -->
+      <div
+        v-if="ticketTypeNotice"
+        class="rounded border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-p-sm text-ink-gray-6"
+      >
+        {{ ticketTypeNotice }}
+      </div>
       <!-- existing fields -->
       <div
         class="flex flex-col"
@@ -249,6 +265,22 @@ const ticketPriorityResource = createListResource({
   fields: ["name", "description"],
   auto: true,
   cache: "ticketPriorities",
+});
+
+// HLB-FORK: type-notice — mirrors ticketPriorityResource above, including the
+// dataMap lookup, so the two behave the same way and the portal already proves
+// this list is readable to a Website User.
+const ticketTypeResource = createListResource({
+  doctype: "HD Ticket Type",
+  fields: ["name", "description"],
+  auto: true,
+  cache: "ticketTypes",
+});
+
+const ticketTypeNotice = computed(() => {
+  const selected = (templateFields as Record<string, string>)["ticket_type"];
+  if (!selected) return "";
+  return ticketTypeResource.dataMap?.[selected]?.description?.trim() || "";
 });
 
 let oldFields = [];
