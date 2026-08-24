@@ -116,7 +116,9 @@
                 theme="gray"
                 variant="solid"
                 :disabled="
-                  $refs.editor?.editor?.isEmpty || ticket.loading || !subject
+                  (bodyRequired && $refs.editor?.editor?.isEmpty) ||
+                  ticket.loading ||
+                  !subject
                 "
                 @click="() => ticket.submit()"
               />
@@ -141,7 +143,9 @@
               theme="gray"
               variant="solid"
               :disabled="
-                $refs.editor?.editor?.isEmpty || ticket.loading || !subject
+                (bodyRequired && $refs.editor?.editor?.isEmpty) ||
+                ticket.loading ||
+                !subject
               "
               @click="() => ticket.submit()"
             />
@@ -177,7 +181,14 @@ import {
 } from "frappe-ui";
 import { useOnboarding } from "frappe-ui/frappe";
 import sanitizeHtml from "sanitize-html";
-import { computed, defineAsyncComponent, onMounted, reactive, ref } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import SearchArticles from "../../components/SearchArticles.vue";
 const TicketTextEditor = defineAsyncComponent(
@@ -231,7 +242,12 @@ const templateFields = reactive({});
 const EDITOR_HINTS: Record<string, string> = {
   "New software request":
     "Please provide as much detail as possible and upload the business case below.",
+  Onboarding:
+    "Please include: job title, certifications (e.g. CA(SA), RA, CISA), mobile number, and any special requests.",
+  Offboarding:
+    "Provide specific instructions e.g. Email forwarding address.",
 };
+
 
 // The sub-type lives in a different Custom Field per ticket type, so look
 // through the ones that carry one rather than hardcoding a single fieldname.
@@ -244,6 +260,20 @@ const SUBTYPE_FIELDS = [
   "au_support_type",
   "hr_subtype",
 ];
+
+// HLB-FORK: optional-body — sub-types where an empty body is a legitimate
+// answer. Upstream disables Submit whenever the editor is empty, which is right
+// almost everywhere: a ticket with no description is a ticket somebody has to
+// chase. Offboarding is the exception — "remove this person's access on this
+// date" is complete once the name and the date are filled in, and forcing a
+// sentence there just trains people to type "n/a".
+// See customisations.manifest.json id=ui-optional-body.
+const OPTIONAL_BODY = new Set(["Offboarding"]);
+
+const bodyRequired = computed(() => {
+  const fields = templateFields as Record<string, string>;
+  return !SUBTYPE_FIELDS.some((fieldname) => OPTIONAL_BODY.has(fields[fieldname]));
+});
 
 const editorHint = computed(() => {
   const fields = templateFields as Record<string, string>;
@@ -260,7 +290,36 @@ const SUBJECT_OVERRIDES: Record<string, { label: string; placeholder: string }> 
       label: "Software tool name",
       placeholder: "Full software name and version if applicable.",
     },
+    "HR Onboarding / Offboarding": {
+      label: "Ticket name",
+      placeholder: "Filled in from the sub-type and full name.",
+    },
   };
+
+// HLB-FORK: hr-ticket-name — derive the subject for HR tickets.
+// Every onboarding ticket wants the same subject in the same shape, and asking
+// a person to type "Onboarding: Jane Smith" by hand guarantees a list where
+// half say "New starter" and half say "onboarding jane". Composing it from the
+// two fields that already carry the answer makes the queue sortable and the
+// ticket findable by name.
+//
+// It stays editable rather than read-only: the derived value is right almost
+// always, and the rare case that needs something else should not need an agent.
+// See customisations.manifest.json id=ui-hr-ticket-name.
+const HR_TICKET_TYPE = "HR Onboarding / Offboarding";
+
+watch(
+  () => {
+    const fields = templateFields as Record<string, string>;
+    return [fields["ticket_type"], fields["hr_subtype"], fields["hr_full_name"]];
+  },
+  ([ticketType, subtype, fullName]) => {
+    if (ticketType !== HR_TICKET_TYPE) return;
+    const name = (fullName || "").trim();
+    if (!subtype || !name) return;
+    subject.value = `${subtype}: ${name}`;
+  }
+);
 
 const subjectCopy = computed(() => {
   const ticketType = (templateFields as Record<string, string>)["ticket_type"];

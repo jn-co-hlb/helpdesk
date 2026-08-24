@@ -104,6 +104,10 @@ def get_fields(template: str, fetch: Literal["Custom Field", "DocField"]):
             fields.hide_from_customer,
             fields.required,
             fields.url_method,
+            # HLB-FORK: multi-select — our Custom Field on the template
+            # row. Without it here the flag never reaches the form and
+            # the field silently renders single-choice.
+            fields.hlb_multiple,
             fields.placeholder,
             fields.idx,
         )

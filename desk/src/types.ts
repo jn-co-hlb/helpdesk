@@ -257,6 +257,8 @@ export interface Field {
   // UniInput now renders it as per-field helper text.
   description?: string | null;
   url_method?: string;
+  // HLB-FORK: multi-select — set on the HD Ticket Template Field row.
+  hlb_multiple?: number;
   link_filters?: string;
   filters?: string;
   display_via_depends_on?: string;
