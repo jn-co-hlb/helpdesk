@@ -106,7 +106,7 @@
             ref="editor"
             v-model:attachments="attachments"
             v-model:content="description"
-            :placeholder="__('Detailed explanation')"
+            :placeholder="editorHint"
             expand
             :uploadFunction="(file:any)=>uploadFunction(file)"
           >
@@ -131,7 +131,7 @@
           ref="editor"
           v-model:attachments="attachments"
           v-model:content="description"
-          :placeholder="__('Detailed explanation')"
+          :placeholder="editorHint"
           expand
           :uploadFunction="(file:any)=>uploadFunction(file)"
         >
@@ -217,6 +217,43 @@ const templateFields = reactive({});
 //
 // Strings are stored raw and passed through __() at read time, not at module
 // load, so translations resolve after the locale is ready.
+// HLB-FORK: editor-hint — per-SUB-TYPE placeholder for the body editor.
+// Retiring narrative custom fields ("Alternatives considered", "What do you need
+// added or changed?") moved that prose into the body, so the body has to ask for
+// it. Upstream's placeholder is the single word-pair "Detailed explanation" for
+// every ticket in the system.
+//
+// Keyed on the sub-type VALUE rather than on (type, field): those values are
+// already unique across the whole form — they are what the SLA conditions and
+// the routing table match on — so a flat map needs no second lookup and stays
+// readable as more sub-types arrive.
+// See customisations.manifest.json id=ui-editor-hint.
+const EDITOR_HINTS: Record<string, string> = {
+  "New software request":
+    "Please provide as much detail as possible and upload the business case below.",
+};
+
+// The sub-type lives in a different Custom Field per ticket type, so look
+// through the ones that carry one rather than hardcoding a single fieldname.
+const SUBTYPE_FIELDS = [
+  "sr_category",
+  "oi_category",
+  "si_category",
+  "swr_category",
+  "pi_category",
+  "au_support_type",
+  "hr_subtype",
+];
+
+const editorHint = computed(() => {
+  const fields = templateFields as Record<string, string>;
+  for (const fieldname of SUBTYPE_FIELDS) {
+    const hint = EDITOR_HINTS[fields[fieldname]];
+    if (hint) return __(hint);
+  }
+  return __("Detailed explanation");
+});
+
 const SUBJECT_OVERRIDES: Record<string, { label: string; placeholder: string }> =
   {
     "Software Request": {
