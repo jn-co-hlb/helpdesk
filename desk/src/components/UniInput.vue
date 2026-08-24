@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { Autocomplete, Link } from "@/components";
+import { Autocomplete, Link, MultiSelect } from "@/components";
 import { APIOptions, Field } from "@/types";
 import { parseApiOptions } from "@/utils";
 import {
@@ -70,7 +70,23 @@ const props = defineProps<P>();
 const emit = defineEmits<E>();
 
 const component = computed(() => {
-  if (props.field.url_method) {
+  // HLB-FORK: multi-select — checked FIRST so it wins for a field that also has
+  // a url_method: the distribution-list picker is both live-loaded AND
+  // multi-valued, and the url_method branch below would otherwise claim it and
+  // render a single-choice control.
+  // See customisations.manifest.json id=ui-multi-select.
+  if (props.field.hlb_multiple) {
+    return h(MultiSelect, {
+      options: props.field.url_method
+        ? apiOptions.data
+        : props.field.options
+          ? props.field.options
+              .split("\n")
+              .filter(Boolean)
+              .map((o) => ({ label: o, value: o }))
+          : [],
+    });
+  } else if (props.field.url_method) {
     return h(Autocomplete, {
       options: apiOptions.data,
       size: "sm",

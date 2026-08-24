@@ -1,6 +1,8 @@
 export { default as BackButton } from "./BackButton.vue";
 export { default as AttachmentItem } from "./AttachmentItem.vue";
 export { default as Autocomplete } from "./Autocomplete.vue";
+// HLB-FORK: multi-select — see MultiSelect.vue
+export { default as MultiSelect } from "./MultiSelect.vue";
 export { default as CommandPalette } from "./command-palette/CP.vue";
 export { default as CommentBox } from "./CommentBox.vue";
 export { default as CommentTextEditor } from "./CommentTextEditor.vue";
