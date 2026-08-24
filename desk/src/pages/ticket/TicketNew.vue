@@ -248,6 +248,19 @@ const EDITOR_HINTS: Record<string, string> = {
     "Provide specific instructions e.g. Email forwarding address.",
 };
 
+// HLB-FORK: editor-hint — the same idea one level up. Operational Incident,
+// Security Incident and Project & Innovation want ONE prompt for the whole type
+// rather than a different one per sub-type, and each has just retired several
+// narrative fields into the body, so the body has to ask for what they held.
+const TYPE_EDITOR_HINTS: Record<string, string> = {
+  "Operational Incident":
+    "Please describe the issue in detail, including what you were busy with at the time and what you saw on screen. Paste or attach screenshots and any supporting documentation.",
+  "Security Incident":
+    "Please supply as much detail as possible, including but not limited to what preceded the incident and what has already been done in response to it.",
+  "Project & Innovation Request":
+    "Please describe the problem or opportunity, how this is done today, the outcome you want and how you would measure success, the systems and data involved, the expected benefit, and any indicative budget.",
+};
+
 
 // The sub-type lives in a different Custom Field per ticket type, so look
 // through the ones that carry one rather than hardcoding a single fieldname.
@@ -277,10 +290,14 @@ const bodyRequired = computed(() => {
 
 const editorHint = computed(() => {
   const fields = templateFields as Record<string, string>;
+  // Sub-type first: it is the more specific answer, so a type-wide prompt never
+  // masks one written for a particular sub-type.
   for (const fieldname of SUBTYPE_FIELDS) {
     const hint = EDITOR_HINTS[fields[fieldname]];
     if (hint) return __(hint);
   }
+  const typeHint = TYPE_EDITOR_HINTS[fields["ticket_type"]];
+  if (typeHint) return __(typeHint);
   return __("Detailed explanation");
 });
 
@@ -393,9 +410,29 @@ function applyFilters(fieldname: string, filters: any = null) {
 
 const customOnChange = computed(() => template.data?._customOnChange);
 
+// HLB-FORK: customer-priority — ticket types where the SUBMITTER picks the
+// priority. Priority is hidden from the customer portal everywhere else, via
+// hide_from_customer on the template row, because a self-assessed priority is
+// usually a wish rather than a measurement. Operational Incident is the
+// exception: the person whose work has stopped is the only one who knows
+// whether it has stopped, and the priority tooltips now spell out what each
+// rung means. hide_from_customer is a single boolean on a single template row,
+// so a per-type exception cannot be expressed in config.
+// See customisations.manifest.json id=ui-customer-priority.
+const CUSTOMER_PRIORITY_TYPES = new Set(["Operational Incident"]);
+
+function customerMaySet(fieldname: string): boolean {
+  if (fieldname !== "priority") return false;
+  const fields = templateFields as Record<string, string>;
+  return CUSTOMER_PRIORITY_TYPES.has(fields["ticket_type"]);
+}
+
 const visibleFields = computed(() => {
   let _fields = template.data?.fields?.filter(
-    (f) => !isCustomerPortal.value || !f.hide_from_customer
+    (f) =>
+      !isCustomerPortal.value ||
+      !f.hide_from_customer ||
+      customerMaySet(f.fieldname)
   );
   if (!_fields) return [];
   return _fields.map((field) => parseField(field, templateFields));
