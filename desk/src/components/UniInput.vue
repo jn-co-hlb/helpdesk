@@ -1,7 +1,15 @@
 <template>
   <div class="space-y-1.5" v-if="field.display_via_depends_on">
+    <!-- HLB-FORK: label-i18n — run the field label through __().
+         Upstream renders it raw, so the Customer -> Department rename (which
+         is ~20 Translation rows rather than a patch across 14 files, see
+         company_helpdesk/setup/terminology.py) reached every other surface and
+         stopped dead at the one place submitters actually look: the intake
+         form's own field labels. The description below already goes through
+         __(); the label was simply missed.
+         See customisations.manifest.json id=ui-label-i18n. -->
     <span class="block text-sm text-ink-gray-7">
-      {{ field.label }}
+      {{ __(field.label) }}
       <span v-if="field.required" class="place-self-center text-ink-red-6">
         *
       </span>
