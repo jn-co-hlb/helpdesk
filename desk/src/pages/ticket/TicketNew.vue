@@ -460,12 +460,34 @@ const ticket = createResource({
     },
     attachments: attachments.value,
   }),
+  // HLB-FORK: validate-visible — only demand what the form actually drew.
+  //
+  // `visibleFields` is the whole template, not the visible part of it: the
+  // hiding happens one level down, in UniInput's own
+  // `v-if="field.display_via_depends_on"`. Filtering on `required` alone
+  // therefore demands fields that are not on screen, and names them in an
+  // error the person has no way to act on. On 2026-08-25 a single stray
+  // `required: 1` on a Project & Innovation template row blocked submission of
+  // EVERY ticket type this way — "Fieldwork completion date is required" on a
+  // printer request. The config half is fixed in company_helpdesk; this is the
+  // half that made one bad row an outage instead of a stray asterisk.
+  //
+  // `description` had the same shape of bug: it was unconditional here while
+  // the Submit button already honoured `bodyRequired`, so an Offboarding
+  // ticket — where optional-body deliberately allows an empty body — offered
+  // an enabled button and then refused the submit.
+  // See customisations.manifest.json id=ui-validate-visible.
   validate: (params) => {
-    const fields = visibleFields.value?.filter((f) => f.required) || [];
-    const toVerify = [...fields, "subject", "description"];
+    const fields =
+      visibleFields.value?.filter(
+        (f) => f.required && f.display_via_depends_on
+      ) || [];
+    const toVerify: any[] = [...fields, "subject"];
+    if (bodyRequired.value) toVerify.push("description");
     for (const field of toVerify) {
       if (!params.doc[field.fieldname || field]) {
-        return `${field.label || field} is required`;
+        const label = field.label ? __(field.label) : field;
+        return `${label} is required`;
       }
     }
   },
