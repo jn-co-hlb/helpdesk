@@ -2,7 +2,8 @@
   <div class="p-5 pb-10 px-10 w-full overflow-scroll items-center relative">
     <LayoutHeader>
       <template #left-header>
-        <div class="text-lg-medium text-ink-gray-9">Knowledge Base</div>
+        <!-- HLB-FORK: label-i18n -->
+        <div class="text-lg-medium text-ink-gray-9">{{ __("Knowledge Base") }}</div>
       </template>
     </LayoutHeader>
     <div
@@ -30,6 +31,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { __ } from "@/translation";
 import { usePageMeta } from "frappe-ui";
 
 import { LayoutHeader } from "@/components";
@@ -44,7 +46,7 @@ onMounted(() => {
 });
 usePageMeta(() => {
   return {
-    title: "Knowledge Base",
+    title: __("Knowledge Base"),
   };
 });
 </script>

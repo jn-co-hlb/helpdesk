@@ -256,11 +256,23 @@ function getOperators(fieldtype: string, fieldname?: string) {
 function getDefaultOperator(field: FilterField): string {
   if (field.fieldname === "_assign") return "like";
   if (typeDate.includes(field.fieldtype)) return "timespan";
+  // HLB-FORK: filter-any-of — Link and Select default to "in", not "equals".
+  //
+  // "Show me In Progress and Unassigned" is the single most common thing
+  // anyone asks a ticket list, and with an "equals" default it is impossible:
+  // two filters on one field AND together and return nothing. The "In"
+  // operator was always there, but nothing about the UI suggested that the
+  // second status needed a different operator rather than a second filter, so
+  // the honest reading of the default was "this app cannot do or".
+  //
+  // Check, Int and Rating keep "equals" — a range of ratings is a comparison
+  // and a checkbox has two values, so a set is the wrong shape for both.
+  if (typeSelect.includes(field.fieldtype) || typeLink.includes(field.fieldtype)) {
+    return "in";
+  }
   if (
-    typeSelect.includes(field.fieldtype) ||
     typeCheck.includes(field.fieldtype) ||
     typeNumber.includes(field.fieldtype) ||
-    typeLink.includes(field.fieldtype) ||
     typeRating.includes(field.fieldtype)
   ) {
     return "equals";

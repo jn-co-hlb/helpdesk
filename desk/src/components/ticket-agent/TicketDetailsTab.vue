@@ -143,7 +143,10 @@
 
 <script setup lang="ts">
 import { Link } from "@/components";
-import { parseField } from "@/composables/formCustomisation";
+import {
+  evaluateDependsOnValue,
+  parseField,
+} from "@/composables/formCustomisation";
 import { useNotifyTicketUpdate } from "@/composables/realtime";
 import { useShortcut } from "@/composables/shortcuts";
 import { getMeta } from "@/stores/meta";
@@ -231,18 +234,22 @@ const customFields = computed(() => {
   ];
   customFields = customFields.filter((f) => !_coreFields.includes(f.fieldname));
   // HLB-FORK: sidebar-fields — the Default template lists every ticket type's
-  // fields; only show the ones that apply to THIS ticket's type (matched via the
-  // field's depends_on now returned by get_ticket_customizations), plus any field
-  // that already has a value. Without this the sidebar dumps all ~40 fields.
-  const _currentType = ticket.value.doc.ticket_type || "";
+  // fields; only show the ones that apply to THIS ticket, plus any field that
+  // already has a value. Without this the sidebar dumps all ~40 fields.
+  //
+  // This used to substring-match the ticket type inside depends_on, which
+  // silently assumed every custom field is gated BY TYPE. `cancel_reason` is
+  // gated by STATUS (`doc.status=='Cancelled'`), so under the old test it
+  // matched nothing, had no value yet, and was filtered out — the reason field
+  // could never appear at the moment somebody cancelled a ticket. Evaluating
+  // the expression properly handles both, and is what the intake form already
+  // does with the same strings.
   customFields = customFields.filter((f) => {
     const dep = f.depends_on || "";
     if (!dep) return true;
-    const matchesType =
-      dep.includes(`'${_currentType}'`) || dep.includes(`"${_currentType}"`);
+    if (evaluateDependsOnValue(dep, ticket.value.doc)) return true;
     const val = ticket.value.doc[f.fieldname];
-    const hasValue = val !== null && val !== undefined && val !== "";
-    return matchesType || hasValue;
+    return val !== null && val !== undefined && val !== "";
   });
   let _customFields = customFields
     .map((f) => {
