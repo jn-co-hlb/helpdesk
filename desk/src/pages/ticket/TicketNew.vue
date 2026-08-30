@@ -89,6 +89,29 @@
             maxlength="140"
           />
         </div>
+        <!-- HLB-FORK: request-spec — what to write, directly above where they
+             write it. See the comment on requestSpec below. -->
+        <div v-if="requestSpec.length" class="flex flex-col gap-2">
+          <span class="block text-sm text-ink-gray-7">
+            {{ __("Request Specification") }}
+          </span>
+          <div
+            class="rounded border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-p-sm text-ink-gray-6"
+          >
+            <p>
+              {{
+                __(
+                  "The following information should be provided below without which the request cannot be initiated."
+                )
+              }}
+            </p>
+            <ol class="mt-1.5 list-decimal ps-5 italic">
+              <li v-for="(item, index) in requestSpec" :key="index">
+                {{ item }}
+              </li>
+            </ol>
+          </div>
+        </div>
         <SearchArticles
           v-if="isCustomerPortal"
           :query="subject"
@@ -385,7 +408,8 @@ const ticketPriorityResource = createListResource({
 // this list is readable to a Website User.
 const ticketTypeResource = createListResource({
   doctype: "HD Ticket Type",
-  fields: ["name", "description"],
+  // HLB-FORK: request-spec — hlb_spec is our Custom Field on HD Ticket Type.
+  fields: ["name", "description", "hlb_spec"],
   auto: true,
   cache: "ticketTypes",
 });
@@ -394,6 +418,30 @@ const ticketTypeNotice = computed(() => {
   const selected = (templateFields as Record<string, string>)["ticket_type"];
   if (!selected) return "";
   return ticketTypeResource.dataMap?.[selected]?.description?.trim() || "";
+});
+
+// HLB-FORK: request-spec — the numbered list of things a submitter has to put
+// in the body before the request can be worked.
+//
+// The type notice above says which BOX to tick; this says what to WRITE, and
+// they are different jobs done at different moments, so it is a second block
+// rather than more words in the first one. It sits directly above the editor
+// because that is where it has to be readable while typing — a placeholder
+// disappears at the first keystroke, which is exactly when the list is needed.
+//
+// The content lives on the HD Ticket Type record (Custom Field `hlb_spec`, one
+// requirement per line), not in a map in this file: the lists differ per type
+// and will be rewritten as the SOP settles, and none of that should need a
+// fork commit, a tag and a rebuild.
+// See customisations.manifest.json id=ui-request-spec.
+const requestSpec = computed<string[]>(() => {
+  const selected = (templateFields as Record<string, string>)["ticket_type"];
+  if (!selected) return [];
+  const raw = ticketTypeResource.dataMap?.[selected]?.hlb_spec || "";
+  return raw
+    .split("\n")
+    .map((line: string) => line.trim())
+    .filter((line: string) => line.length > 0);
 });
 
 let oldFields = [];
