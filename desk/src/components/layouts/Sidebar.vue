@@ -380,13 +380,17 @@ const articles = ref([
         name: "lesson-3-agents-teams",
         title: "Agents & Teams",
       },
+      // HLB-FORK: label-i18n — these three were the only onboarding titles
+      // rendered raw, which is why "Customers & Contacts" survived the
+      // Department rename and "Knowledge Base" the FAQ one while every
+      // sibling around them changed. See setup/terminology.py.
       {
         name: "customers-contacts",
-        title: "Customers & Contacts",
+        title: __("Customers & Contacts"),
       },
       {
         name: "lesson-4-knowledge-base",
-        title: "Knowledge Base",
+        title: __("Knowledge Base"),
       },
       {
         name: "customer-portal",

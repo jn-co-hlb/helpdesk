@@ -90,14 +90,17 @@
           />
         </div>
         <!-- HLB-FORK: request-spec — what to write, directly above where they
-             write it. See the comment on requestSpec below. -->
-        <div v-if="requestSpec.length" class="flex flex-col gap-2">
+             write it. See the comment on requestSpec below.
+
+             Not in a bordered box: the type notice above is already a box, and
+             two stacked boxes read as chrome rather than as the one thing on
+             the form somebody actually has to act on. Colour carries it
+             instead, and the extra top margin keeps it off the field above. -->
+        <div v-if="requestSpec.length" class="mt-0.5 flex flex-col gap-2">
           <span class="block text-sm text-ink-gray-7">
             {{ __("Request Specification") }}
           </span>
-          <div
-            class="rounded border border-outline-gray-2 bg-surface-gray-1 px-3 py-2 text-p-sm text-ink-gray-6"
-          >
+          <div class="text-p-sm text-ink-blue-5">
             <p>
               {{
                 __(
@@ -105,11 +108,16 @@
                 )
               }}
             </p>
-            <ol class="mt-1.5 list-decimal ps-5 italic">
+            <ol
+              v-if="requestSpec.length > 1"
+              class="mt-1.5 list-decimal ps-5 italic"
+            >
               <li v-for="(item, index) in requestSpec" :key="index">
                 {{ item }}
               </li>
             </ol>
+            <!-- A single requirement is a sentence, not a list of one. -->
+            <p v-else class="mt-1.5 italic">{{ requestSpec[0] }}</p>
           </div>
         </div>
         <SearchArticles
@@ -334,7 +342,37 @@ const SUBJECT_OVERRIDES: Record<string, { label: string; placeholder: string }> 
       label: "Ticket name",
       placeholder: "Filled in from the sub-type and full name.",
     },
+    "GITC & IT Audit Request": {
+      label: "Client Name",
+      placeholder: "The client this audit work is for.",
+    },
   };
+
+// HLB-FORK: gitc-year-end — stamp the year end onto the subject on submit.
+// An audit queue is read by client AND period: "Acme Ltd" alone is ambiguous
+// the moment the next year's work starts, and asking people to type the
+// convention by hand produces four spellings of it. Composed at submit rather
+// than while typing so the field stays a plain client name to fill in.
+const GITC_TICKET_TYPE = "GITC & IT Audit Request";
+const SUBJECT_MAX = 140;
+
+function composeSubject(): string {
+  const fields = templateFields as Record<string, string>;
+  const base = subject.value.trim();
+  if (fields["ticket_type"] !== GITC_TICKET_TYPE) return base;
+  const yearEnd = (fields["au_year_end"] || "").trim();
+  if (!base || !yearEnd) return base;
+  const suffix = `YE: ${yearEnd}`;
+  // Idempotent: a resubmit after a validation error must not stack suffixes.
+  if (base.endsWith(suffix)) return base;
+  // HD Ticket.subject is a Data field — varchar(140) — and the input above
+  // already lets someone use all 140. Appending would push it over and frappe
+  // aborts the insert with CharacterLengthExceededError, so trim the client
+  // name rather than lose the period.
+  const room = SUBJECT_MAX - suffix.length - 1;
+  const head = base.length > room ? base.slice(0, room).trimEnd() : base;
+  return `${head} ${suffix}`;
+}
 
 // HLB-FORK: hr-ticket-name — derive the subject for HR tickets.
 // Every onboarding ticket wants the same subject in the same shape, and asking
@@ -434,10 +472,31 @@ const ticketTypeNotice = computed(() => {
 // and will be rewritten as the SOP settles, and none of that should need a
 // fork commit, a tag and a rebuild.
 // See customisations.manifest.json id=ui-request-spec.
+// HLB-FORK: request-spec — sub-types whose specification differs from their
+// ticket type's. Keyed on the sub-type VALUE like EDITOR_HINTS above, because
+// those values are already unique across the whole form.
+//
+// These live here and not on a record because a sub-type IS a string in a
+// Select — there is no per-sub-type document to hang a field on. The type-level
+// default still comes from HD Ticket Type.hlb_spec, so only the exceptions cost
+// a fork commit.
+const SUBTYPE_SPECS: Record<string, string> = {
+  "Design and Implementation":
+    "Please enter all the information related to the request as well as all client details and all systems in scope, in the below text-area.",
+  "Operating Effectiveness":
+    "Please enter all the information related to the request as well as all client details and all systems in scope, in the below text-area.",
+};
+
 const requestSpec = computed<string[]>(() => {
-  const selected = (templateFields as Record<string, string>)["ticket_type"];
+  const fields = templateFields as Record<string, string>;
+  const selected = fields["ticket_type"];
   if (!selected) return [];
-  const raw = ticketTypeResource.dataMap?.[selected]?.hlb_spec || "";
+  // Sub-type first: it is the more specific answer, so a type-wide spec never
+  // masks one written for a particular sub-type.
+  const override = SUBTYPE_FIELDS.map((f) => SUBTYPE_SPECS[fields[f]]).find(
+    Boolean
+  );
+  const raw = override || ticketTypeResource.dataMap?.[selected]?.hlb_spec || "";
   return raw
     .split("\n")
     .map((line: string) => line.trim())
@@ -460,27 +519,15 @@ const customOnChange = computed(() => template.data?._customOnChange);
 
 // HLB-FORK: customer-priority — ticket types where the SUBMITTER picks the
 // priority. Priority is hidden from the customer portal everywhere else, via
-// hide_from_customer on the template row, because a self-assessed priority is
-// usually a wish rather than a measurement. Operational Incident is the
-// exception: the person whose work has stopped is the only one who knows
-// whether it has stopped, and the priority tooltips now spell out what each
-// rung means. hide_from_customer is a single boolean on a single template row,
-// so a per-type exception cannot be expressed in config.
-// See customisations.manifest.json id=ui-customer-priority.
-const CUSTOMER_PRIORITY_TYPES = new Set(["Operational Incident"]);
-
-function customerMaySet(fieldname: string): boolean {
-  if (fieldname !== "priority") return false;
-  const fields = templateFields as Record<string, string>;
-  return CUSTOMER_PRIORITY_TYPES.has(fields["ticket_type"]);
-}
-
+// HLB-FORK: customer-priority RETIRED 2026-08-30. Priority is no longer on the
+// intake template at all — no ticket type asks for it at creation, agents set
+// it on the ticket afterwards — so the per-type exception this carried has
+// nothing left to except. Removed rather than left inert: an unused branch in
+// a forked file is one more thing to re-land on the next rebase for no
+// behaviour. See customisations.manifest.json id=ui-customer-priority.
 const visibleFields = computed(() => {
   let _fields = template.data?.fields?.filter(
-    (f) =>
-      !isCustomerPortal.value ||
-      !f.hide_from_customer ||
-      customerMaySet(f.fieldname)
+    (f) => !isCustomerPortal.value || !f.hide_from_customer
   );
   if (!_fields) return [];
   return _fields.map((field) => parseField(field, templateFields));
@@ -502,7 +549,8 @@ const ticket = createResource({
   makeParams: () => ({
     doc: {
       description: description.value,
-      subject: subject.value,
+      // HLB-FORK: gitc-year-end
+      subject: composeSubject(),
       template: props.templateId,
       ...templateFields,
     },
