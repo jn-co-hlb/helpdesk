@@ -56,6 +56,18 @@
       :selections="listSelections"
       @success="listViewRef?.unselectAll()"
     />
+    <!-- HLB-FORK: ticket-batch — see SetBatchModal.vue for why this is a Link
+         Custom Field and not frappe tags. -->
+    <SetBatchModal
+      v-model="showSetBatchModal"
+      :selections="listSelections"
+      @success="
+        () => {
+          listViewRef?.unselectAll();
+          listViewRef?.list?.reload();
+        }
+      "
+    />
   </div>
 </template>
 
@@ -64,6 +76,8 @@ import { LayoutHeader, ListViewBuilder } from "@/components";
 import { TicketIcon } from "@/components/icons";
 import IndicatorIcon from "@/components/icons/IndicatorIcon.vue";
 import BulkReplyModal from "@/components/ticket-agent/BulkReplyModal.vue";
+// HLB-FORK: ticket-batch
+import SetBatchModal from "@/components/ticket-agent/SetBatchModal.vue";
 import ExportModal from "@/components/ticket/ExportModal.vue";
 import ViewBreadcrumbs from "@/components/ViewBreadcrumbs.vue";
 import { normalizeFilters } from "@/components/view-controls/filter";
@@ -109,6 +123,8 @@ const { getStatus } = useTicketStatusStore();
 const listSelections = ref(new Set());
 
 const showBulkReplyModal = ref(false);
+// HLB-FORK: ticket-batch
+const showSetBatchModal = ref(false);
 
 const selectBannerActions = [
   {
@@ -126,6 +142,18 @@ const selectBannerActions = [
       listSelections.value = new Set(selections);
       showExportModal.value = true;
     },
+  },
+  // HLB-FORK: ticket-batch — the selection banner is the only place this makes
+  // sense: batching is something you decide about a set of tickets you are
+  // already looking at, not one at a time from inside each ticket.
+  {
+    label: __("Set batch"),
+    icon: "lucide-layers",
+    onClick: (selections: Set<string>) => {
+      listSelections.value = new Set(selections);
+      showSetBatchModal.value = true;
+    },
+    condition: () => !isCustomerPortal.value,
   },
 ];
 
