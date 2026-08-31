@@ -56,8 +56,7 @@
       <!-- HLB-FORK: type-notice — show the selected HD Ticket Type's own
            `description` as a visible notice. Upstream has no per-type guidance
            anywhere on the intake form: `HD Ticket Template.about` is per
-           TEMPLATE so it shows the same words for every type, and the
-           field-notes mechanism renders a FIELD's description, which is static.
+           TEMPLATE so it shows the same words for every type.
            Picking the wrong ticket type is our most common intake mistake and
            it mis-routes the ticket, so the guidance has to react to the choice.
            Deliberately a notice and not a Tooltip like the priority one beside
